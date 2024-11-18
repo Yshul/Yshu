@@ -14,7 +14,17 @@
 
 <img src="文生缪缪.png">
 
-<audio src="选中干员1.mp3" autoplay="true" controls="" style="height: 40px; width: 66%;">
+<audio id="myAudio" src="选中干员1.mp3" muted controls style="height: 40px; width: 66%;"></audio>
+
+<button onclick="playAudio()">Play Audio</button>
+
+<script>
+function playAudio() {
+  var audio = document.getElementById("myAudio");
+  audio.muted = false;
+  audio.play();
+}
+</script>
 </body>
 
 </html>
