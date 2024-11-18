@@ -1,18 +1,73 @@
 <html>
-<head><title>点击看一只可爱缪缪</title></head>
+<head>
+  <title>点击看一只可爱缪缪</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f0f8ff;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
+      color: #6a5acd;
+    }
+    ruby, rt {
+      font-size: 1.2em;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      margin-bottom: 20px;
+    }
+    li {
+      font-size: 1.1em;
+      margin: 5px 0;
+      color: #4682b4;
+    }
+    img {
+      max-width: 300px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    audio {
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #ff69b4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #ff1493;
+    }
+  </style>
+</head>
 <body>
 <h1>
   <ruby>缪尔赛思<rt>mulsyels</rt></ruby>
 </h1>
 <ul>
   <li>Long, brown and green hair</li>
-  <li>pointed ears</li>
-  <li>yellow eyes</li>
-  <li>hairpiece</li>
-  <li>mole under eye</li>
+  <li>Pointed ears</li>
+  <li>Yellow eyes</li>
+  <li>Hairpiece</li>
+  <li>Mole under eye</li>
 </ul>
 
-<img src="文生缪缪.png">
+<img src="https://img.alicdn.com/tfs/TB1YRYjXvDH8KJjy0FlXXagHVXa-590-886.png" alt="缪缪">
 
 <audio id="myAudio" src="选中干员1.mp3" muted controls style="height: 40px; width: 66%;"></audio>
 
@@ -26,5 +81,4 @@ function playAudio() {
 }
 </script>
 </body>
-
 </html>
