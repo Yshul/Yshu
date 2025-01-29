@@ -1,77 +1,229 @@
-<html>
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-  <title>乘风破浪的故事</title>
-  <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f0f8ff;
-      color: #333;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      text-align: center;
-    }
-    h1 {
-      font-size: 2em;
-      margin-bottom: 20px;
-      color: #6a5acd;
-    }
-    ruby, rt {
-      font-size: 1.2em;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-      margin-bottom: 20px;
-    }
-    li {
-      font-size: 1.1em;
-      margin: 5px 0;
-      color: #4682b4;
-    }
-    img {
-      max-width: 300px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
-    }
-    audio {
-      margin-bottom: 20px;
-    }
-    button {
-      background-color: #ff69b4;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 1em;
-      cursor: pointer;
-      border-radius: 5px;
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #ff1493;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>B站热门排行榜数据可视化</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --bili-blue: #00aeec;
+            --bili-pink: #fb7299;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            width: 90%;
+            height: 400px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        input, select {
+            padding: 8px 15px;
+            border: 2px solid var(--bili-blue);
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            padding: 0 5%;
+        }
+
+        .video-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-content {
+            padding: 15px;
+        }
+
+        .video-thumb {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-bottom: 3px solid var(--bili-pink);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--bili-blue);
+        }
+    </style>
 </head>
 <body>
-<h1>
-  <ruby>乘风破浪<rt>chéng fēng pò làng</rt></ruby>
-</h1>
-<ul>
-  <li><strong>PROMPT:</strong></li>
-  <li>Riding the wind and Waves</li>
-  <li>ocean</li>
-  <li>exaggerated</li>
-  <licharacters stepping on the Waves</li>
-  <li>Body Prominent</li>
-  <li>huge waves</li>
-</ul>
+    <div class="header">
+        <h1 style="color: var(--bili-blue);">B站热门排行榜数据可视化</h1>
+        <div class="filters">
+            <input type="text" id="search" placeholder="搜索视频标题或UP主...">
+            <select id="sort">
+                <option value="play">按播放量排序</option>
+                <option value="danmaku">按弹幕数排序</option>
+            </select>
+        </div>
+    </div>
 
-<img src="乘风破浪.png" alt="缪缪">
+    <div id="main-chart" class="chart-container"></div>
+    <div class="loading" id="loading">数据加载中...</div>
+    <div class="video-grid" id="video-container"></div>
 
+    <script>
+        // 封面图生成函数
+        function getCoverURL(url) {
+            const bvMatch = url.match(/video\/(BV\w+)/);
+            return bvMatch ? `https://i0.hdslb.com/bfs/archive/${bvMatch[1]}.jpg` : '';
+        }
 
-</script>
+        // 数据加载与处理
+        async function loadData() {
+            try {
+                const data = await new Promise((resolve, reject) => {
+                    Papa.parse('./top100_details.csv', {
+                        download: true,
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: (res) => res.errors.length ? reject(res.errors) : resolve(res.data),
+                        error: reject
+                    });
+                });
+
+                return data.map(item => ({
+                    ...item,
+                    play: parseFloat(item.播放量) * (item.播放量.includes('万') ? 10000 : 1),
+                    danmaku: parseFloat(item.弹幕数) * (item.弹幕数.includes('万') ? 10000 : 1),
+                    cover: getCoverURL(item.视频URL)
+                }));
+
+            } catch (error) {
+                console.error('数据加载失败:', error);
+                document.getElementById('loading').innerHTML = '数据加载失败，请检查控制台';
+                throw error;
+            }
+        }
+
+        // 图表初始化
+        function initChart(data) {
+            const chart = echarts.init(document.getElementById('main-chart'));
+            const option = {
+                title: { text: '播放量 vs 弹幕数分布', left: 'center' },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: (params) => `
+                        <b>${params.data.title}</b><br>
+                        播放量: ${params.value[0].toFixed(1)}万<br>
+                        弹幕数: ${params.value[1].toFixed(1)}万
+                    `
+                },
+                xAxis: { name: '播放量 (万)', type: 'value' },
+                yAxis: { name: '弹幕数 (万)', type: 'value' },
+                series: [{
+                    type: 'scatter',
+                    data: data.map(d => ({
+                        value: [d.play/10000, d.danmaku/10000],
+                        title: d.视频标题
+                    })),
+                    itemStyle: { color: '#fb7299' },
+                    emphasis: { scale: 2 }
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        // 视频卡片生成
+        function createVideoCard(item) {
+            const card = document.createElement('div');
+            card.className = 'video-card';
+            card.innerHTML = `
+                <img src="${item.cover}" class="video-thumb" 
+                     onerror="this.src='https://i0.hdslb.com/bfs/archive/error_cover.png'">
+                <div class="card-content">
+                    <h3>${item.视频标题}</h3>
+                    <p style="color: var(--bili-blue); margin: 8px 0;">UP主：${item.UP主昵称}</p>
+                    <div class="stats">
+                        <span title="播放量">▶ ${item.播放量}</span>
+                        <span title="弹幕数">💬 ${item.弹幕数}</span>
+                    </div>
+                </div>
+            `;
+            card.onclick = () => window.open(item.视频URL);
+            return card;
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const rawData = await loadData();
+                document.getElementById('loading').remove();
+                
+                initChart(rawData);
+                
+                const updateDisplay = () => {
+                    const searchTerm = document.getElementById('search').value.toLowerCase();
+                    const sortKey = document.getElementById('sort').value;
+                    
+                    const filtered = rawData
+                        .filter(d => 
+                            d.视频标题.toLowerCase().includes(searchTerm) || 
+                            d.UP主昵称.toLowerCase().includes(searchTerm)
+                        )
+                        .sort((a, b) => b[sortKey] - a[sortKey]);
+
+                    const container = document.getElementById('video-container');
+                    container.innerHTML = '';
+                    filtered.forEach(item => container.appendChild(createVideoCard(item)));
+                };
+
+                document.getElementById('search').addEventListener('input', updateDisplay);
+                document.getElementById('sort').addEventListener('change', updateDisplay);
+                updateDisplay();
+
+            } catch (error) {
+                console.error('初始化失败:', error);
+            }
+        });
+    </script>
 </body>
 </html>
